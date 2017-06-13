@@ -1,13 +1,8 @@
-# Tetromino (a Tetris clone)
-# By Al Sweigart al@inventwithpython.com
-# http://inventwithpython.com/pygame
-# Released under a "Simplified BSD" license
-
 import random, time, pygame, sys
 from pygame.locals import *
 
 FPS = 25
-WINDOWWIDTH = 640
+WINDOWWIDTH = 600
 WINDOWHEIGHT = 480
 BOXSIZE = 20
 BOARDWIDTH = 10
@@ -17,29 +12,28 @@ BLANK = '.'
 MOVESIDEWAYSFREQ = 0.15
 MOVEDOWNFREQ = 0.1
 
-XMARGIN = int((WINDOWWIDTH - BOARDWIDTH * BOXSIZE) / 2)
+XMARGIN = int((WINDOWWIDTH - BOARDWIDTH * BOXSIZE) / 3)
 TOPMARGIN = WINDOWHEIGHT - (BOARDHEIGHT * BOXSIZE) - 5
 
 #               R    G    B
 WHITE       = (255, 255, 255)
 GRAY        = (185, 185, 185)
 BLACK       = (  0,   0,   0)
+PURPLE      = ( 97,  28, 161)
 RED         = (155,   0,   0)
-LIGHTRED    = (175,  20,  20)
+#LIGHTRED    = (175,  20,  20)
 GREEN       = (  0, 155,   0)
-LIGHTGREEN  = ( 20, 175,  20)
+#LIGHTGREEN  = ( 20, 175,  20)
 BLUE        = (  0,   0, 155)
-LIGHTBLUE   = ( 20,  20, 175)
+#LIGHTBLUE   = ( 20,  20, 175)
 YELLOW      = (155, 155,   0)
-LIGHTYELLOW = (175, 175,  20)
+#LIGHTYELLOW = (175, 175,  20)
 
-BORDERCOLOR = BLUE
-BGCOLOR = BLACK
-TEXTCOLOR = WHITE
+BORDERCOLOR = GRAY
+BGCOLOR = WHITE
+TEXTCOLOR = BLACK
 TEXTSHADOWCOLOR = GRAY
-COLORS      = (     BLUE,      GREEN,      RED,      YELLOW)
-LIGHTCOLORS = (LIGHTBLUE, LIGHTGREEN, LIGHTRED, LIGHTYELLOW)
-assert len(COLORS) == len(LIGHTCOLORS) # each color must have light color
+COLORS      = (     BLUE,      GREEN,      RED,      YELLOW,    GRAY,   BLACK,  PURPLE)
 
 TEMPLATEWIDTH = 5
 TEMPLATEHEIGHT = 5
@@ -159,25 +153,27 @@ def main():
     global FPSCLOCK, DISPLAYSURF, BASICFONT, BIGFONT
     pygame.init()
     FPSCLOCK = pygame.time.Clock()
-    DISPLAYSURF = pygame.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT))
-    BASICFONT = pygame.font.Font('freesansbold.ttf', 18)
+    DISPLAYSURF = pygame.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT)) #게임화면 크기
+    BASICFONT = pygame.font.Font('freesansbold.ttf', 18) #폰트파일로딩과 글씨 크기
     BIGFONT = pygame.font.Font('freesansbold.ttf', 100)
-    pygame.display.set_caption('Tetromino')
+    pygame.display.set_caption('Tetris') #타이틀 화면의 제목
+    DISPLAYSURF.fill(WHITE)
 
-    showTextScreen('Tetromino')
-    while True: # game loop
+    showTextScreen('Tetris')
+    while True: #while을 통해서 다시시작 가능
         if random.randint(0, 1) == 0:
-            pygame.mixer.music.load('tetrisb.mid')
+            pygame.mixer.music.load('Time Trials.mp3')
         else:
-            pygame.mixer.music.load('tetrisc.mid')
-        pygame.mixer.music.play(-1, 0.0)
-        runGame()
-        pygame.mixer.music.stop()
+            pygame.mixer.music.load('SURV1V3.mp3')
+        pygame.mixer.music.play(-1, 0.0) #음악재생
+        runGame() #메인함수 시작
+        pygame.mixer.music.stop() #음악중지
+        finish = pygame.mixer.Sound('final.wav')
+        finish.play()
         showTextScreen('Game Over')
 
 
-def runGame():
-    # setup variables for the start of the game
+def runGame(): # 게임의 메인이 되는 함수
     board = getBlankBoard()
     lastMoveDownTime = time.time()
     lastMoveSidewaysTime = time.time()
@@ -186,12 +182,14 @@ def runGame():
     movingLeft = False
     movingRight = False
     score = 0
+    abcd = 0
+    CON = 1
     level, fallFreq = calculateLevelAndFallFreq(score)
 
     fallingPiece = getNewPiece()
     nextPiece = getNewPiece()
 
-    while True: # game loop
+    while True: #죽지 않으면 계속해서 블럭이 생성되어 내려옴
         if fallingPiece == None:
             # No falling piece in play, so start a new piece at the top
             fallingPiece = nextPiece
@@ -213,46 +211,45 @@ def runGame():
                     lastFallTime = time.time()
                     lastMoveDownTime = time.time()
                     lastMoveSidewaysTime = time.time()
-                elif (event.key == K_LEFT or event.key == K_a):
+                elif (event.key == K_LEFT):
                     movingLeft = False
-                elif (event.key == K_RIGHT or event.key == K_d):
+                elif (event.key == K_RIGHT):
                     movingRight = False
-                elif (event.key == K_DOWN or event.key == K_s):
+                elif (event.key == K_DOWN):
                     movingDown = False
 
             elif event.type == KEYDOWN:
                 # moving the piece sideways
-                if (event.key == K_LEFT or event.key == K_a) and isValidPosition(board, fallingPiece, adjX=-1):
+                if (event.key == K_LEFT) and isValidPosition(board, fallingPiece, adjX=-1):
                     fallingPiece['x'] -= 1
                     movingLeft = True
                     movingRight = False
                     lastMoveSidewaysTime = time.time()
 
-                elif (event.key == K_RIGHT or event.key == K_d) and isValidPosition(board, fallingPiece, adjX=1):
+                elif (event.key == K_RIGHT) and isValidPosition(board, fallingPiece, adjX=1):
                     fallingPiece['x'] += 1
                     movingRight = True
                     movingLeft = False
                     lastMoveSidewaysTime = time.time()
 
                 # rotating the piece (if there is room to rotate)
-                elif (event.key == K_UP or event.key == K_w):
+                elif (event.key == K_UP):
                     fallingPiece['rotation'] = (fallingPiece['rotation'] + 1) % len(PIECES[fallingPiece['shape']])
                     if not isValidPosition(board, fallingPiece):
                         fallingPiece['rotation'] = (fallingPiece['rotation'] - 1) % len(PIECES[fallingPiece['shape']])
-                elif (event.key == K_q): # rotate the other direction
-                    fallingPiece['rotation'] = (fallingPiece['rotation'] - 1) % len(PIECES[fallingPiece['shape']])
-                    if not isValidPosition(board, fallingPiece):
-                        fallingPiece['rotation'] = (fallingPiece['rotation'] + 1) % len(PIECES[fallingPiece['shape']])
+                
 
                 # making the piece fall faster with the down key
-                elif (event.key == K_DOWN or event.key == K_s):
+                elif (event.key == K_DOWN):
                     movingDown = True
                     if isValidPosition(board, fallingPiece, adjY=1):
                         fallingPiece['y'] += 1
                     lastMoveDownTime = time.time()
 
                 # move the current piece all the way down
-                elif event.key == K_SPACE:
+                elif (event.key == K_SPACE or event.key == 13):
+                    Boo = pygame.mixer.Sound('Attack.wav')
+                    Boo.play()
                     movingDown = False
                     movingLeft = False
                     movingRight = False
@@ -280,12 +277,32 @@ def runGame():
                 # falling piece has landed, set it on the board
                 addToBoard(board, fallingPiece)
                 score += removeCompleteLines(board)
-                level, fallFreq = calculateLevelAndFallFreq(score)
+                # 점수에 따라서 음악이 바뀌고 속도가 순간적으로 증가
+                if score > 0 and score > CON * 7 :
+                    CON += 1
+                if score > 5 * CON and score < 7 * CON:
+                    if abcd == 0:
+                        pygame.mixer.music.load('fire.mp3')
+                        pygame.mixer.music.play(-1, 0.0)
+                        abcd += 1
+                    level, fallFreq = calculateLevelAndFallFreq2(score)
+                else:
+                    if abcd == 1:
+                        pygame.mixer.music.stop()
+                        if random.randint(0, 1) == 0:
+                            pygame.mixer.music.load('Time Trials.mp3')
+                        else:
+                            pygame.mixer.music.load('SURV1V3.mp3')
+                        pygame.mixer.music.play(-1, 0.0)
+                        abcd -= 1
+                    level, fallFreq = calculateLevelAndFallFreq(score)
                 fallingPiece = None
+                    
             else:
                 # piece did not land, just move the piece down
                 fallingPiece['y'] += 1
                 lastFallTime = time.time()
+
 
         # drawing everything on the screen
         DISPLAYSURF.fill(BGCOLOR)
@@ -357,17 +374,37 @@ def calculateLevelAndFallFreq(score):
     # Based on the score, return the level the player is on and
     # how many seconds pass until a falling piece falls one space.
     level = int(score / 10) + 1
-    fallFreq = 0.27 - (level * 0.02)
+    fallFreq = 0.40 - (level * 0.02)
     return level, fallFreq
 
-def getNewPiece():
-    # return a random new piece in a random rotation and color
+def calculateLevelAndFallFreq2(score):
+    # Based on the score, return the level the player is on and
+    # how many seconds pass until a falling piece falls one space.
+    level = int(score / 10) + 1
+    fallFreq = 0.20 - (level * 0.02)
+    return level, fallFreq
+
+def getNewPiece(): # 랜덤으로 블럭 생성
     shape = random.choice(list(PIECES.keys()))
+    if shape == 'S':
+        color = 0
+    elif shape == 'Z':
+        color = 1
+    elif shape == 'J':
+        color = 2
+    elif shape == 'L':
+        color = 3
+    elif shape == 'I':
+        color = 4
+    elif shape == 'O':
+        color = 5
+    else:
+        color = 6
     newPiece = {'shape': shape,
                 'rotation': random.randint(0, len(PIECES[shape]) - 1),
                 'x': int(BOARDWIDTH / 2) - int(TEMPLATEWIDTH / 2),
-                'y': -2, # start it above the board (i.e. less than 0)
-                'color': random.randint(0, len(COLORS)-1)}
+                'y': -2, # 화면 밖에서 부터 떨어지도록
+                'color': color}
     return newPiece
 
 
@@ -426,6 +463,8 @@ def removeCompleteLines(board):
             for x in range(BOARDWIDTH):
                 board[x][0] = BLANK
             numLinesRemoved += 1
+            pop = pygame.mixer.Sound('Boom.wav')
+            pop.play()
             # Note on the next iteration of the loop, y is the same.
             # This is so that if the line that was pulled down is also
             # complete, it will be removed.
@@ -450,7 +489,7 @@ def drawBox(boxx, boxy, color, pixelx=None, pixely=None):
     if pixelx == None and pixely == None:
         pixelx, pixely = convertToPixelCoords(boxx, boxy)
     pygame.draw.rect(DISPLAYSURF, COLORS[color], (pixelx + 1, pixely + 1, BOXSIZE - 1, BOXSIZE - 1))
-    pygame.draw.rect(DISPLAYSURF, LIGHTCOLORS[color], (pixelx + 1, pixely + 1, BOXSIZE - 4, BOXSIZE - 4))
+    pygame.draw.rect(DISPLAYSURF, COLORS[color], (pixelx + 1, pixely + 1, BOXSIZE - 4, BOXSIZE - 4))
 
 
 def drawBoard(board):
@@ -469,13 +508,13 @@ def drawStatus(score, level):
     # draw the score text
     scoreSurf = BASICFONT.render('Score: %s' % score, True, TEXTCOLOR)
     scoreRect = scoreSurf.get_rect()
-    scoreRect.topleft = (WINDOWWIDTH - 150, 20)
+    scoreRect.topleft = (WINDOWWIDTH - 150, 60)
     DISPLAYSURF.blit(scoreSurf, scoreRect)
 
     # draw the level text
     levelSurf = BASICFONT.render('Level: %s' % level, True, TEXTCOLOR)
     levelRect = levelSurf.get_rect()
-    levelRect.topleft = (WINDOWWIDTH - 150, 50)
+    levelRect.topleft = (WINDOWWIDTH - 150, 90)
     DISPLAYSURF.blit(levelSurf, levelRect)
 
 
@@ -496,11 +535,11 @@ def drawNextPiece(piece):
     # draw the "next" text
     nextSurf = BASICFONT.render('Next:', True, TEXTCOLOR)
     nextRect = nextSurf.get_rect()
-    nextRect.topleft = (WINDOWWIDTH - 120, 80)
+    nextRect.topleft = (WINDOWWIDTH - 150, 120)
     DISPLAYSURF.blit(nextSurf, nextRect)
     # draw the "next" piece
     drawPiece(piece, pixelx=WINDOWWIDTH-120, pixely=100)
 
-
 if __name__ == '__main__':
     main()
+
