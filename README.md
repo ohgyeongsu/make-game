@@ -9,6 +9,8 @@
 
 ![](http://postfiles8.naver.net/MjAxNzA2MTRfMzcg/MDAxNDk3NDE2MjEwNTE2.IQVehzpjG-K3Ar5E0f2UQHziWCq9shn2PT2BUCsIypsg.on3SRC7zAanVSGoA6lFIL03xVZj6N4C6bnYExWtVvF0g.PNG.dhrudtn7187/noname03.png?type=w3)
 
+![](http://postfiles10.naver.net/MjAxNzA2MTRfNzYg/MDAxNDk3NDE5NDUwMTIz.tAx9Dh7WnwMfEpE0t2XNuhWQM6OA9nL38HEYGT_3MRwg.YYNuO5_ddAHksrFV40GdMXgRAMfJsxxTc3F0kTDQChYg.PNG.dhrudtn7187/noname04.png?type=w3)
+
 ### 기본기능
 * 7종류의 블럭이 랜덤하게 내려옵니다.
 * 특정 키를 눌러 블럭을 회전시킬 수 있습니다.
