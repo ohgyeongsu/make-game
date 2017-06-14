@@ -4,16 +4,16 @@ from pygame.locals import *
 FPS = 30
 WINDOWWIDTH = 600
 WINDOWHEIGHT = 480
-BOXSIZE = 20
-BOARDWIDTH = 10
-BOARDHEIGHT = 20
-BLANK = '.'
+BOXSIZE = 20 # 블럭크기
+BOARDWIDTH = 10 # 가로블럭갯수 
+BOARDHEIGHT = 20 # 세로블럭갯수
+BLANK = '.' # 빈칸
 
 MOVESIDEWAYSFREQ = 0.15
 MOVEDOWNFREQ = 0.1
 
-XMARGIN = int((WINDOWWIDTH - BOARDWIDTH * BOXSIZE) / 3)
-TOPMARGIN = WINDOWHEIGHT - (BOARDHEIGHT * BOXSIZE) - 5
+XMARGIN = int((WINDOWWIDTH - BOARDWIDTH * BOXSIZE) / 3) # 전체창중 테트리스 게임창과 양 옆의 떨어진거리
+TOPMARGIN = WINDOWHEIGHT - (BOARDHEIGHT * BOXSIZE) - 5 # 전체창중 테트리스 게임창과 위부분과 떨어진거리
 
 #               R    G    B
 WHITE       = (255, 255, 255)
@@ -33,7 +33,7 @@ TEXTCOLOR = BLACK
 TEXTSHADOWCOLOR = GREEN
 COLORS      = (     BLUE,      GREEN,      RED,      YELLOW,    ORANGE,   BLACK,  PURPLE, GRAY)
 
-TEMPLATEWIDTH = 5
+TEMPLATEWIDTH = 5  # 5X5
 TEMPLATEHEIGHT = 5
 
 S_SHAPE_TEMPLATE = [['.....',
@@ -202,11 +202,11 @@ def runGame(): # 게임의 메인이 되는 함수
             lastFallTime = time.time() # 시간초기화
 
             if not isValidPosition(board, fallingPiece):
-                return # can't fit a new piece on the board, so game over
+                return # 보드에 새로운 블럭을 놓을 수 없으면 게임종료
 
         checkForQuit()
         for event in pygame.event.get():
-            if event.type == KEYUP: #키가 눌리면
+            if event.type == KEYUP:
                 if (event.key == K_r):
                     pygame.mixer.music.stop()
                     return main()
@@ -228,7 +228,7 @@ def runGame(): # 게임의 메인이 되는 함수
                     showTextScreen('Paused', BIGFONT, BASICFONT, TEXTCOLOR, TEXTSHADOWCOLOR) #일시정지
                     if play == 0:
                         pygame.mixer.music.unpause()
-                    lastFallTime = time.time()
+                    lastFallTime = time.time() #정지 후 시간이 지나가므로 현재시간으로 설정
                     lastMoveDownTime = time.time()
                     lastMoveSidewaysTime = time.time()
                 elif (event.key == K_LEFT):
@@ -238,7 +238,7 @@ def runGame(): # 게임의 메인이 되는 함수
                 elif (event.key == K_DOWN):
                      movingDown = False
 
-            elif event.type == KEYDOWN: #키가 눌렸다 때지면
+            elif event.type == KEYDOWN:
                 if (event.key == K_LEFT) and isValidPosition(board, fallingPiece, adjX=-1):
                     fallingPiece['x'] -= 1
                     movingLeft = True
@@ -308,9 +308,9 @@ def runGame(): # 게임의 메인이 되는 함수
 
         # 떨어질 시간이 되면 블럭을 떨어뜨린다
         if time.time() - lastFallTime > fallFreq:
-            # see if the piece has landed
+            # 블럭이 바닥에 도착했는지 검사
             if not isValidPosition(board, fallingPiece, adjY=1):
-                # falling piece has landed, set it on the board
+                # 바닥에 블럭이 도착하면 보드에 생성
                 fallingPiece['color'] = 7
                 addToBoard(board, fallingPiece)
                 score += removeCompleteLines(board)
@@ -337,7 +337,7 @@ def runGame(): # 게임의 메인이 되는 함수
                 fallingPiece = None
                     
             else:
-                # piece did not land, just move the piece down
+                # 블럭이 땅에 마주치지않으면 한칸씩 떨어진다
                 fallingPiece['y'] += 1
                 lastFallTime = time.time()
 
@@ -433,12 +433,12 @@ def showTextScreen2(text,font1,textcolor,shadowcolor):
             terminate()
 
 def checkForQuit():
-    for event in pygame.event.get(QUIT): # get all the QUIT events
-        terminate() # terminate if any QUIT events are present
-    for event in pygame.event.get(KEYUP): # get all the KEYUP events
+    for event in pygame.event.get(QUIT):
+        terminate()
+    for event in pygame.event.get(KEYUP):
         if event.key == K_ESCAPE:
-            terminate() # terminate if the KEYUP event was for the Esc key
-        pygame.event.post(event) # put the other KEYUP event objects back
+            terminate()
+        pygame.event.post(event)
 
 
 def calculateLevelAndFallFreq(score): #블록 다운 속도
@@ -476,7 +476,6 @@ def getNewPiece(): # 랜덤으로 블럭 생성
 
 
 def addToBoard(board, piece):
-    # fill in the board based on piece's location, shape, and rotation
     for x in range(TEMPLATEWIDTH):
         for y in range(TEMPLATEHEIGHT):
             if PIECES[piece['shape']][piece['rotation']][y][x] != BLANK:
@@ -484,7 +483,7 @@ def addToBoard(board, piece):
 
 
 def getBlankBoard():
-    # create and return a new blank board data structure
+    #맨처음에 빈보드 생성
     board = []
     for i in range(BOARDWIDTH):
         board.append([BLANK] * BOARDHEIGHT)
@@ -496,7 +495,7 @@ def isOnBoard(x, y):
 
 
 def isValidPosition(board, piece, adjX=0, adjY=0):
-    # Return True if the piece is within the board and not colliding
+    # 충돌검사
     for x in range(TEMPLATEWIDTH):
         for y in range(TEMPLATEHEIGHT):
             isAboveBoard = y + piece['y'] + adjY < 0
@@ -509,7 +508,7 @@ def isValidPosition(board, piece, adjX=0, adjY=0):
     return True
 
 def isCompleteLine(board, y):
-    # Return True if the line filled with boxes with no gaps.
+    # 한줄이 완변하게됬는지
     for x in range(BOARDWIDTH):
         if board[x][y] == BLANK:
             return False
@@ -517,12 +516,11 @@ def isCompleteLine(board, y):
 
 
 def removeCompleteLines(board):
-    # Remove any completed lines on the board, move everything above them down, and return the number of complete lines.
     numLinesRemoved = 0
-    y = BOARDHEIGHT - 1 # start y at the bottom of the board
+    y = BOARDHEIGHT - 1 #바닥에서 시작
     while y >= 0:
         if isCompleteLine(board, y):
-            # Remove the line and pull boxes down by one line.
+            # 한줄이 완변하게 됬으면
             for pullDownY in range(y, 0, -1):
                 for x in range(BOARDWIDTH):
                     board[x][pullDownY] = board[x][pullDownY-1]
@@ -532,11 +530,8 @@ def removeCompleteLines(board):
             numLinesRemoved += 1
             pop = pygame.mixer.Sound('Boom.wav')
             pop.play()
-            # Note on the next iteration of the loop, y is the same.
-            # This is so that if the line that was pulled down is also
-            # complete, it will be removed.
         else:
-            y -= 1 # move on to check next row up
+            y -= 1 # 한줄씩 올라가면서 확인
     return numLinesRemoved
 
 
@@ -547,10 +542,6 @@ def convertToPixelCoords(boxx, boxy):
 
 
 def drawBox(boxx, boxy, color, pixelx=None, pixely=None):
-    # draw a single box (each tetromino piece has four boxes)
-    # at xy coordinates on the board. Or, if pixelx & pixely
-    # are specified, draw to the pixel coordinates stored in
-    # pixelx & pixely (this is used for the "Next" piece).
     if color == BLANK:
         return
     if pixelx == None and pixely == None:
@@ -560,14 +551,12 @@ def drawBox(boxx, boxy, color, pixelx=None, pixely=None):
 
 
 def drawBoard(board):
-    # draw the border around the board
     pygame.draw.rect(DISPLAYSURF, BORDERCOLOR, (XMARGIN - 3, TOPMARGIN - 7, (BOARDWIDTH * BOXSIZE) + 8, (BOARDHEIGHT * BOXSIZE) + 8), 5)
     for i in range(0,9):
         pygame.draw.line(DISPLAYSURF, BORDERCOLOR, (153 + BOXSIZE * i, 66), (153 + BOXSIZE * i, 477), 3)
 
-    # fill the background of the board
     #pygame.draw.rect(DISPLAYSURF, BGCOLOR, (XMARGIN, TOPMARGIN, BOXSIZE * BOARDWIDTH, BOXSIZE * BOARDHEIGHT))
-    # draw the individual boxes on the board
+    
     for x in range(BOARDWIDTH):
         for y in range(BOARDHEIGHT):
             drawBox(x, y, board[x][y])
