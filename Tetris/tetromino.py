@@ -1,7 +1,7 @@
-import random, time, pygame, sys
+import random, time, pygame, sys, datetime, webbrowser
 from pygame.locals import *
 
-FPS = 25
+FPS = 30
 WINDOWWIDTH = 600
 WINDOWHEIGHT = 480
 BOXSIZE = 20
@@ -21,19 +21,17 @@ GRAY        = (185, 185, 185)
 BLACK       = (  0,   0,   0)
 PURPLE      = ( 97,  28, 161)
 RED         = (155,   0,   0)
-#LIGHTRED    = (175,  20,  20)
 GREEN       = (  0, 155,   0)
-#LIGHTGREEN  = ( 20, 175,  20)
 BLUE        = (  0,   0, 155)
-#LIGHTBLUE   = ( 20,  20, 175)
 YELLOW      = (155, 155,   0)
-#LIGHTYELLOW = (175, 175,  20)
+ORANGE      = (255, 187,   0)
+SKYBLUE      = (  0, 216, 255)
 
-BORDERCOLOR = GRAY
+BORDERCOLOR = SKYBLUE
 BGCOLOR = WHITE
 TEXTCOLOR = BLACK
-TEXTSHADOWCOLOR = GRAY
-COLORS      = (     BLUE,      GREEN,      RED,      YELLOW,    GRAY,   BLACK,  PURPLE)
+TEXTSHADOWCOLOR = GREEN
+COLORS      = (     BLUE,      GREEN,      RED,      YELLOW,    ORANGE,   BLACK,  PURPLE, GRAY)
 
 TEMPLATEWIDTH = 5
 TEMPLATEHEIGHT = 5
@@ -60,11 +58,11 @@ Z_SHAPE_TEMPLATE = [['.....',
                      '.O...',
                      '.....']]
 
-I_SHAPE_TEMPLATE = [['..O..',
+I_SHAPE_TEMPLATE = [['.....',
                      '..O..',
                      '..O..',
                      '..O..',
-                     '.....'],
+                     '..O..'],
                     ['.....',
                      '.....',
                      'OOOO.',
@@ -72,9 +70,9 @@ I_SHAPE_TEMPLATE = [['..O..',
                      '.....']]
 
 O_SHAPE_TEMPLATE = [['.....',
+                     '.OO..',
+                     '.OO..',
                      '.....',
-                     '.OO..',
-                     '.OO..',
                      '.....']]
 
 J_SHAPE_TEMPLATE = [['.....',
@@ -88,9 +86,9 @@ J_SHAPE_TEMPLATE = [['.....',
                      '..O..',
                      '.....'],
                     ['.....',
-                     '.....',
                      '.OOO.',
                      '...O.',
+                     '.....',
                      '.....'],
                     ['.....',
                      '..O..',
@@ -130,9 +128,9 @@ T_SHAPE_TEMPLATE = [['.....',
                      '..O..',
                      '.....'],
                     ['.....',
-                     '.....',
                      '.OOO.',
                      '..O..',
+                     '.....',
                      '.....'],
                     ['.....',
                      '..O..',
@@ -148,18 +146,22 @@ PIECES = {'S': S_SHAPE_TEMPLATE,
           'O': O_SHAPE_TEMPLATE,
           'T': T_SHAPE_TEMPLATE}
 
+Img = pygame.image.load('blackhole.png')
+Img2 = pygame.image.load('Humangreed.jpg')
+Img3 = pygame.image.load('fish.jpg')
 
 def main():
-    global FPSCLOCK, DISPLAYSURF, BASICFONT, BIGFONT
+    global FPSCLOCK, DISPLAYSURF, BASICFONT, BIGFONT, MIDDLE
     pygame.init()
     FPSCLOCK = pygame.time.Clock()
     DISPLAYSURF = pygame.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT)) #게임화면 크기
     BASICFONT = pygame.font.Font('freesansbold.ttf', 18) #폰트파일로딩과 글씨 크기
-    BIGFONT = pygame.font.Font('freesansbold.ttf', 100)
+    BIGFONT = pygame.font.Font('freesansbold.ttf', 90)
+    MIDDLE = pygame.font.Font('freesansbold.ttf', 30)
     pygame.display.set_caption('Tetris') #타이틀 화면의 제목
     DISPLAYSURF.fill(WHITE)
 
-    showTextScreen('Tetris')
+    showTextScreen('Tetris',BIGFONT,BASICFONT,TEXTCOLOR,TEXTSHADOWCOLOR)
     while True: #while을 통해서 다시시작 가능
         if random.randint(0, 1) == 0:
             pygame.mixer.music.load('Time Trials.mp3')
@@ -170,44 +172,62 @@ def main():
         pygame.mixer.music.stop() #음악중지
         finish = pygame.mixer.Sound('final.wav')
         finish.play()
-        showTextScreen('Game Over')
-
+        showTextScreen('Game over', BIGFONT, BASICFONT, TEXTCOLOR, TEXTSHADOWCOLOR)
 
 def runGame(): # 게임의 메인이 되는 함수
+    global Img, Img2, Img3
     board = getBlankBoard()
     lastMoveDownTime = time.time()
     lastMoveSidewaysTime = time.time()
     lastFallTime = time.time()
-    movingDown = False # note: there is no movingUp variable
+    movingDown = False
     movingLeft = False
     movingRight = False
     score = 0
-    abcd = 0
-    CON = 1
+    musicplay = 0
+    dummy = 1
+    play = 0
+    hole = 0
+    MUSICVOLUME = 0.5
+    pygame.mixer.music.set_volume(MUSICVOLUME)
     level, fallFreq = calculateLevelAndFallFreq(score)
 
     fallingPiece = getNewPiece()
     nextPiece = getNewPiece()
 
     while True: #죽지 않으면 계속해서 블럭이 생성되어 내려옴
-        if fallingPiece == None:
-            # No falling piece in play, so start a new piece at the top
+        if fallingPiece == None: # 떨어지는 블럭이 없으면 생성
             fallingPiece = nextPiece
             nextPiece = getNewPiece()
-            lastFallTime = time.time() # reset lastFallTime
+            lastFallTime = time.time() # 시간초기화
 
             if not isValidPosition(board, fallingPiece):
                 return # can't fit a new piece on the board, so game over
 
         checkForQuit()
-        for event in pygame.event.get(): # event handling loop
-            if event.type == KEYUP:
-                if (event.key == K_p):
-                    # Pausing the game
-                    DISPLAYSURF.fill(BGCOLOR)
+        for event in pygame.event.get():
+            if event.type == KEYUP: #키가 눌리면
+                if (event.key == K_r):
                     pygame.mixer.music.stop()
-                    showTextScreen('Paused') # pause until a key press
-                    pygame.mixer.music.play(-1, 0.0)
+                    return main()
+                if (event.key == K_p):
+                    hole += 1
+                    if hole >= 3:
+                        pygame.mixer.music.stop()
+                        zzz = pygame.mixer.Sound('smile.wav')
+                        zzz.play()
+                        DISPLAYSURF.blit(Img, [0, 0])
+                        showTextScreen1('Press a Enter',BIGFONT,RED,WHITE)
+                        DISPLAYSURF.blit(Img2, [0, 0])
+                        showTextScreen1('One More Press a Enter',MIDDLE,RED,WHITE)
+                        DISPLAYSURF.blit(Img3, [0, 0])
+                        showTextScreen2('Big Fish!!!',BIGFONT,RED,WHITE)
+
+
+                    pygame.mixer.music.pause()
+                    showTextScreen('Paused', BIGFONT, BASICFONT, TEXTCOLOR, TEXTSHADOWCOLOR) #일시정지
+                    if play == 0:
+                        pygame.mixer.music.unpause()
                     lastFallTime = time.time()
                     lastMoveDownTime = time.time()
                     lastMoveSidewaysTime = time.time()
@@ -216,10 +236,9 @@ def runGame(): # 게임의 메인이 되는 함수
                 elif (event.key == K_RIGHT):
                     movingRight = False
                 elif (event.key == K_DOWN):
-                    movingDown = False
+                     movingDown = False
 
-            elif event.type == KEYDOWN:
-                # moving the piece sideways
+            elif event.type == KEYDOWN: #키가 눌렸다 때지면
                 if (event.key == K_LEFT) and isValidPosition(board, fallingPiece, adjX=-1):
                     fallingPiece['x'] -= 1
                     movingLeft = True
@@ -232,21 +251,21 @@ def runGame(): # 게임의 메인이 되는 함수
                     movingLeft = False
                     lastMoveSidewaysTime = time.time()
 
-                # rotating the piece (if there is room to rotate)
+                #위 방향키로 블럭의 방향 바꿈
                 elif (event.key == K_UP):
                     fallingPiece['rotation'] = (fallingPiece['rotation'] + 1) % len(PIECES[fallingPiece['shape']])
                     if not isValidPosition(board, fallingPiece):
                         fallingPiece['rotation'] = (fallingPiece['rotation'] - 1) % len(PIECES[fallingPiece['shape']])
                 
 
-                # making the piece fall faster with the down key
+                #아래 방향키로 블럭을 내려오는 속도보다 빠르게 내릴수 있음
                 elif (event.key == K_DOWN):
                     movingDown = True
                     if isValidPosition(board, fallingPiece, adjY=1):
                         fallingPiece['y'] += 1
                     lastMoveDownTime = time.time()
 
-                # move the current piece all the way down
+                #스페이스나 엔터로 블럭을 한번에 바닥에 내림
                 elif (event.key == K_SPACE or event.key == 13):
                     Boo = pygame.mixer.Sound('Attack.wav')
                     Boo.play()
@@ -258,7 +277,24 @@ def runGame(): # 게임의 메인이 되는 함수
                             break
                     fallingPiece['y'] += i - 1
 
-        # handle moving the piece because of user input
+                elif (event.key == K_q):
+                    if play == 0:
+                        play = 1
+                        pygame.mixer.music.pause()
+                    else:
+                        play = 0
+                        pygame.mixer.music.unpause()
+
+                elif (event.key == K_0):
+                    if MUSICVOLUME < 0.5:
+                        MUSICVOLUME += 0.1
+                    pygame.mixer.music.set_volume(MUSICVOLUME)
+                elif (event.key == K_MINUS):
+                    if MUSICVOLUME > 0:
+                        MUSICVOLUME -= 0.1
+                    pygame.mixer.music.set_volume(MUSICVOLUME)
+
+        # 사용자의 입력에 따라 블럭을 움직임
         if (movingLeft or movingRight) and time.time() - lastMoveSidewaysTime > MOVESIDEWAYSFREQ:
             if movingLeft and isValidPosition(board, fallingPiece, adjX=-1):
                 fallingPiece['x'] -= 1
@@ -270,31 +306,33 @@ def runGame(): # 게임의 메인이 되는 함수
             fallingPiece['y'] += 1
             lastMoveDownTime = time.time()
 
-        # let the piece fall if it is time to fall
+        # 떨어질 시간이 되면 블럭을 떨어뜨린다
         if time.time() - lastFallTime > fallFreq:
             # see if the piece has landed
             if not isValidPosition(board, fallingPiece, adjY=1):
                 # falling piece has landed, set it on the board
+                fallingPiece['color'] = 7
                 addToBoard(board, fallingPiece)
                 score += removeCompleteLines(board)
                 # 점수에 따라서 음악이 바뀌고 속도가 순간적으로 증가
-                if score > 0 and score > CON * 7 :
-                    CON += 1
-                if score > 5 * CON and score < 7 * CON:
-                    if abcd == 0:
+                if score > 0 and score > dummy * 7 :
+                    dummy += 1
+                if score > 5 * dummy and score < 7 * dummy:
+                    if musicplay == 0 and play == 0:
                         pygame.mixer.music.load('fire.mp3')
                         pygame.mixer.music.play(-1, 0.0)
-                        abcd += 1
+                        musicplay += 1
                     level, fallFreq = calculateLevelAndFallFreq2(score)
                 else:
-                    if abcd == 1:
+                    if musicplay == 1:
                         pygame.mixer.music.stop()
-                        if random.randint(0, 1) == 0:
-                            pygame.mixer.music.load('Time Trials.mp3')
-                        else:
-                            pygame.mixer.music.load('SURV1V3.mp3')
-                        pygame.mixer.music.play(-1, 0.0)
-                        abcd -= 1
+                        if play == 0:
+                            if random.randint(0, 1) == 0:
+                                pygame.mixer.music.load('Time Trials.mp3')
+                            else:
+                                pygame.mixer.music.load('SURV1V3.mp3')
+                            pygame.mixer.music.play(-1, 0.0)
+                            musicplay -= 1
                     level, fallFreq = calculateLevelAndFallFreq(score)
                 fallingPiece = None
                     
@@ -304,7 +342,7 @@ def runGame(): # 게임의 메인이 되는 함수
                 lastFallTime = time.time()
 
 
-        # drawing everything on the screen
+        # 화면에 모두 그리기
         DISPLAYSURF.fill(BGCOLOR)
         drawBoard(board)
         drawStatus(score, level)
@@ -321,14 +359,14 @@ def makeTextObjs(text, font, color):
     return surf, surf.get_rect()
 
 
-def terminate():
+def terminate(): #종료
     pygame.quit()
     sys.exit()
 
 
 def checkForKeyPress():
-    # Go through event queue looking for a KEYUP event.
-    # Grab KEYDOWN events to remove them from the event queue.
+    #KEYUP 이벤트가 발생했는지 찾는다.
+    #KEYDOWN 이벤트를 찾아제거
     checkForQuit()
 
     for event in pygame.event.get([KEYDOWN, KEYUP]):
@@ -338,21 +376,19 @@ def checkForKeyPress():
     return None
 
 
-def showTextScreen(text):
-    # This function displays large text in the
-    # center of the screen until a key is pressed.
-    # Draw the text drop shadow
-    titleSurf, titleRect = makeTextObjs(text, BIGFONT, TEXTSHADOWCOLOR)
+def showTextScreen(text,font1, font2 ,textcolor,shadowcolor):
+    # 글씨 그림자 출력
+    titleSurf, titleRect = makeTextObjs(text, font1, shadowcolor)
     titleRect.center = (int(WINDOWWIDTH / 2), int(WINDOWHEIGHT / 2))
     DISPLAYSURF.blit(titleSurf, titleRect)
 
-    # Draw the text
-    titleSurf, titleRect = makeTextObjs(text, BIGFONT, TEXTCOLOR)
+    # 글씨 출력
+    titleSurf, titleRect = makeTextObjs(text, font1, textcolor)
     titleRect.center = (int(WINDOWWIDTH / 2) - 3, int(WINDOWHEIGHT / 2) - 3)
     DISPLAYSURF.blit(titleSurf, titleRect)
 
-    # Draw the additional "Press a key to play." text.
-    pressKeySurf, pressKeyRect = makeTextObjs('Press a key to play.', BASICFONT, TEXTCOLOR)
+    #"Press a key to play." 출력
+    pressKeySurf, pressKeyRect = makeTextObjs('Press a key to play.', font2, textcolor)
     pressKeyRect.center = (int(WINDOWWIDTH / 2), int(WINDOWHEIGHT / 2) + 100)
     DISPLAYSURF.blit(pressKeySurf, pressKeyRect)
 
@@ -360,6 +396,41 @@ def showTextScreen(text):
         pygame.display.update()
         FPSCLOCK.tick()
 
+def showTextScreen1(text,font1,textcolor,shadowcolor):
+
+    titleSurf, titleRect = makeTextObjs(text, font1, shadowcolor)
+    titleRect.center = (int(WINDOWWIDTH / 2), int(WINDOWHEIGHT / 2))
+    DISPLAYSURF.blit(titleSurf, titleRect)
+
+    titleSurf, titleRect = makeTextObjs(text, font1, textcolor)
+    titleRect.center = (int(WINDOWWIDTH / 2) - 3, int(WINDOWHEIGHT / 2) - 3)
+    DISPLAYSURF.blit(titleSurf, titleRect)
+
+    while checkForKeyPress() != 13:
+        pygame.display.update()
+        FPSCLOCK.tick()
+
+def showTextScreen2(text,font1,textcolor,shadowcolor):
+
+    titleSurf, titleRect = makeTextObjs(text, font1, shadowcolor)
+    titleRect.center = (int(WINDOWWIDTH / 2), int(WINDOWHEIGHT / 2))
+    DISPLAYSURF.blit(titleSurf, titleRect)
+
+    titleSurf, titleRect = makeTextObjs(text, font1, textcolor)
+    titleRect.center = (int(WINDOWWIDTH / 2) - 3, int(WINDOWHEIGHT / 2) - 3)
+    DISPLAYSURF.blit(titleSurf, titleRect)
+
+    fff =  pygame.mixer.Sound('fish.wav')
+    fff.play()
+    seconds = 0
+    while checkForKeyPress() == None:
+        seconds += 1
+        pygame.display.update()
+        FPSCLOCK.tick()
+        if seconds == 200:
+            url = 'www.kangtaegong.com'
+            webbrowser.open(url)
+            terminate()
 
 def checkForQuit():
     for event in pygame.event.get(QUIT): # get all the QUIT events
@@ -370,16 +441,12 @@ def checkForQuit():
         pygame.event.post(event) # put the other KEYUP event objects back
 
 
-def calculateLevelAndFallFreq(score):
-    # Based on the score, return the level the player is on and
-    # how many seconds pass until a falling piece falls one space.
+def calculateLevelAndFallFreq(score): #블록 다운 속도
     level = int(score / 10) + 1
     fallFreq = 0.40 - (level * 0.02)
     return level, fallFreq
 
 def calculateLevelAndFallFreq2(score):
-    # Based on the score, return the level the player is on and
-    # how many seconds pass until a falling piece falls one space.
     level = int(score / 10) + 1
     fallFreq = 0.20 - (level * 0.02)
     return level, fallFreq
@@ -495,9 +562,11 @@ def drawBox(boxx, boxy, color, pixelx=None, pixely=None):
 def drawBoard(board):
     # draw the border around the board
     pygame.draw.rect(DISPLAYSURF, BORDERCOLOR, (XMARGIN - 3, TOPMARGIN - 7, (BOARDWIDTH * BOXSIZE) + 8, (BOARDHEIGHT * BOXSIZE) + 8), 5)
+    for i in range(0,9):
+        pygame.draw.line(DISPLAYSURF, BORDERCOLOR, (153 + BOXSIZE * i, 66), (153 + BOXSIZE * i, 477), 3)
 
     # fill the background of the board
-    pygame.draw.rect(DISPLAYSURF, BGCOLOR, (XMARGIN, TOPMARGIN, BOXSIZE * BOARDWIDTH, BOXSIZE * BOARDHEIGHT))
+    #pygame.draw.rect(DISPLAYSURF, BGCOLOR, (XMARGIN, TOPMARGIN, BOXSIZE * BOARDWIDTH, BOXSIZE * BOARDHEIGHT))
     # draw the individual boxes on the board
     for x in range(BOARDWIDTH):
         for y in range(BOARDHEIGHT):
@@ -505,17 +574,67 @@ def drawBoard(board):
 
 
 def drawStatus(score, level):
-    # draw the score text
+    now = datetime.datetime.now()
+    nowTime = now.strftime('%H:%M:%S')
+
+    #화면에 시간 출력
+    timeSurf = BASICFONT.render('Time: %s' % nowTime, True, TEXTCOLOR)
+    timeRect = timeSurf.get_rect()
+    timeRect.topleft = (WINDOWWIDTH - 170, 30)
+    DISPLAYSURF.blit(timeSurf, timeRect)
+    #화면에 점수 출력
     scoreSurf = BASICFONT.render('Score: %s' % score, True, TEXTCOLOR)
     scoreRect = scoreSurf.get_rect()
-    scoreRect.topleft = (WINDOWWIDTH - 150, 60)
+    scoreRect.topleft = (WINDOWWIDTH - 170, 60)
     DISPLAYSURF.blit(scoreSurf, scoreRect)
 
-    # draw the level text
+    #화면에 레벨 출력
     levelSurf = BASICFONT.render('Level: %s' % level, True, TEXTCOLOR)
     levelRect = levelSurf.get_rect()
-    levelRect.topleft = (WINDOWWIDTH - 150, 90)
+    levelRect.topleft = (WINDOWWIDTH - 170, 90)
     DISPLAYSURF.blit(levelSurf, levelRect)
+
+    #화면에 사용키 출력
+    useSurf = BASICFONT.render('    ^        : Shift', True, TEXTCOLOR)
+    useRect = useSurf.get_rect()
+    useRect.topleft = (WINDOWWIDTH - 195, 300)
+    DISPLAYSURF.blit(useSurf, useRect)
+    useSurf = BASICFONT.render('<      >    : Left / Right', True, TEXTCOLOR)
+    useRect = useSurf.get_rect()
+    useRect.topleft = (WINDOWWIDTH - 195, 325)
+    DISPLAYSURF.blit(useSurf, useRect)
+    useSurf = BASICFONT.render('    V        : Slow down', True, TEXTCOLOR)
+    useRect = useSurf.get_rect()
+    useRect.topleft = (WINDOWWIDTH - 195, 350)
+    DISPLAYSURF.blit(useSurf, useRect)
+    useSurf = BASICFONT.render('Space : Fast down', True, TEXTCOLOR)
+    useRect = useSurf.get_rect()
+    useRect.topleft = (WINDOWWIDTH - 195, 375)
+    DISPLAYSURF.blit(useSurf, useRect)
+    useSurf = BASICFONT.render('R : Restart', True, TEXTCOLOR)
+    useRect = useSurf.get_rect()
+    useRect.topleft = (WINDOWWIDTH - 195, 400)
+    DISPLAYSURF.blit(useSurf, useRect)
+    useSurf = BASICFONT.render('P : Paused', True, TEXTCOLOR)
+    useRect = useSurf.get_rect()
+    useRect.topleft = (WINDOWWIDTH - 195, 425)
+    DISPLAYSURF.blit(useSurf, useRect)
+    useSurf = BASICFONT.render('ESC : Quit', True, TEXTCOLOR)
+    useRect = useSurf.get_rect()
+    useRect.topleft = (WINDOWWIDTH - 195, 450)
+    DISPLAYSURF.blit(useSurf, useRect)
+    useSurf = BASICFONT.render('Q : Pause Music / UnPause Music', True, TEXTCOLOR)
+    useRect = useSurf.get_rect()
+    useRect.topleft = (0, 0)
+    DISPLAYSURF.blit(useSurf, useRect)
+    useSurf = BASICFONT.render('0 : Volume Up', True, TEXTCOLOR)
+    useRect = useSurf.get_rect()
+    useRect.topleft = (0, 25)
+    DISPLAYSURF.blit(useSurf, useRect)
+    useSurf = BASICFONT.render(' - : Volume Down', True, TEXTCOLOR)
+    useRect = useSurf.get_rect()
+    useRect.topleft = (0, 50)
+    DISPLAYSURF.blit(useSurf, useRect)
 
 
 def drawPiece(piece, pixelx=None, pixely=None):
@@ -532,14 +651,41 @@ def drawPiece(piece, pixelx=None, pixely=None):
 
 
 def drawNextPiece(piece):
-    # draw the "next" text
-    nextSurf = BASICFONT.render('Next:', True, TEXTCOLOR)
+    #화면에 next 출력
+    nextSurf = BASICFONT.render('Next: =========', True, TEXTCOLOR)
     nextRect = nextSurf.get_rect()
-    nextRect.topleft = (WINDOWWIDTH - 150, 120)
+    nextRect.topleft = (WINDOWWIDTH - 170, 120)
     DISPLAYSURF.blit(nextSurf, nextRect)
-    # draw the "next" piece
-    drawPiece(piece, pixelx=WINDOWWIDTH-120, pixely=100)
+    nextSurf = BASICFONT.render('|                  |', True, TEXTCOLOR)
+    nextRect = nextSurf.get_rect()
+    nextRect.topleft = (WINDOWWIDTH - 120, 135)
+    DISPLAYSURF.blit(nextSurf, nextRect)
+    nextSurf = BASICFONT.render('|                  |', True, TEXTCOLOR)
+    nextRect = nextSurf.get_rect()
+    nextRect.topleft = (WINDOWWIDTH - 120, 150)
+    DISPLAYSURF.blit(nextSurf, nextRect)
+    nextSurf = BASICFONT.render('|                  |', True, TEXTCOLOR)
+    nextRect = nextSurf.get_rect()
+    nextRect.topleft = (WINDOWWIDTH - 120, 165)
+    DISPLAYSURF.blit(nextSurf, nextRect)
+    nextSurf = BASICFONT.render('|                  |', True, TEXTCOLOR)
+    nextRect = nextSurf.get_rect()
+    nextRect.topleft = (WINDOWWIDTH - 120, 180)
+    DISPLAYSURF.blit(nextSurf, nextRect)
+    nextSurf = BASICFONT.render('|                  |', True, TEXTCOLOR)
+    nextRect = nextSurf.get_rect()
+    nextRect.topleft = (WINDOWWIDTH - 120, 195)
+    DISPLAYSURF.blit(nextSurf, nextRect)
+    nextSurf = BASICFONT.render('|                  |', True, TEXTCOLOR)
+    nextRect = nextSurf.get_rect()
+    nextRect.topleft = (WINDOWWIDTH - 120, 210)
+    DISPLAYSURF.blit(nextSurf, nextRect)
+    nextSurf = BASICFONT.render('=========', True, TEXTCOLOR)
+    nextRect = nextSurf.get_rect()
+    nextRect.topleft = (WINDOWWIDTH - 120, 225)
+    DISPLAYSURF.blit(nextSurf, nextRect)
+    #화면에 다음 블럭 출력
+    drawPiece(piece, pixelx=WINDOWWIDTH-114, pixely=130)
 
 if __name__ == '__main__':
     main()
-
