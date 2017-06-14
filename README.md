@@ -1,4 +1,7 @@
 # Project#2 2014038059 오경수
+* PyGame을 이용해서 나만의 테트리스를 구현하자
+* 오픈소스로 웹상에 돌아다는 Tetrimino의 코드를 베이스로 별도로 추가하고 싶은 기능을 추가해 나만의 테트리스로 바꿔보자
+
 ## Tetris
 ![](http://postfiles16.naver.net/MjAxNzA2MTRfMjAz/MDAxNDk3NDE2MjA5ODA4.44xyEaiCS2EUz0If9sUHTU65L9kseIsmerxWyd7k4Kwg.cnRzF2crGaR5owsSPl9CnGxUh4VyjgCg-XNOx4AkGIEg.PNG.dhrudtn7187/noname01.png?type=w3)
 
